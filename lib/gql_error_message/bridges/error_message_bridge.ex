@@ -25,9 +25,10 @@ if Code.ensure_loaded?(ErrorMessage) do
     @spec translate_error(error :: ErrorMessage.t(), input :: map(), spec :: Spec.t()) ::
             list(ClientError.t() | ServerError.t())
     def translate_error(%ErrorMessage{} = e, input, %Spec{kind: :server_error} = spec) do
-      msg = e.message || spec.message
-      error_params = e.details[:params] || e.details[:input] || %{}
-      extensions = Map.merge(spec.extensions || %{}, e.details[:extensions] || %{})
+      details = e.details || %{}
+      msg = details[:gql][:message] || e.message || spec.message
+      error_params = details[:gql][:input] || details[:params] || %{}
+      extensions = Map.merge(spec.extensions || %{}, details[:gql][:extensions] || %{})
 
       input
       |> intersect_paths(error_params)
@@ -39,8 +40,9 @@ if Code.ensure_loaded?(ErrorMessage) do
     end
 
     def translate_error(%ErrorMessage{} = e, input, %Spec{kind: :client_error} = spec) do
-      msg = e.message || spec.message
-      error_params = e.details[:params] || e.details[:input] || %{}
+      details = e.details || %{}
+      msg = details[:gql][:message] || e.message || spec.message
+      error_params = details[:gql][:input] || details[:params] || %{}
 
       input
       |> intersect_paths(error_params)
@@ -57,8 +59,13 @@ if Code.ensure_loaded?(ErrorMessage) do
       |> replace_value_template(value)
     end
 
-    defp replace_key_template(str, key), do: String.replace(str, "%{key}", to_string(key))
-    defp replace_value_template(str, value), do: String.replace(str, "%{value}", to_string(value))
+    defp replace_key_template(str, key) do
+      String.replace(str, "%{key}", to_string(key))
+    end
+
+    defp replace_value_template(str, value) do
+      String.replace(str, "%{value}", to_string(value))
+    end
 
     # The `intersect_paths` function walks a pair of nested data structures
     # and collects the paths of fields they have in common. A “path” is just
