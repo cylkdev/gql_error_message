@@ -74,6 +74,10 @@ defmodule GQLErrorMessage do
       %ClientError{} = ce -> ce
       term -> raise "Expected a `GQLErrorMessage.ClientError` struct, got: #{inspect(term)}"
     end)
+    |> then(fn
+      [] -> raise "Bridge #{inspect(bridge)} must return at least one error."
+      errors -> errors
+    end)
   end
 
   defp handle_translate(error, bridge, input, %Spec{kind: :server_error} = spec) do
@@ -83,6 +87,10 @@ defmodule GQLErrorMessage do
     |> Enum.map(fn
       %ServerError{} = se -> se
       term -> raise "Expected a `GQLErrorMessage.ServerError` struct, got: #{inspect(term)}"
+    end)
+    |> then(fn
+      [] -> raise "Bridge #{inspect(bridge)} must return at least one error."
+      errors -> errors
     end)
   end
 
