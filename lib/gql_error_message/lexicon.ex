@@ -172,7 +172,7 @@ defmodule GQLErrorMessage.Lexicon do
                  |> Map.new(fn spec -> {{spec.operation, spec.code}, spec} end)
 
   @impl GQLErrorMessage.SpecStore
-  def get(op, code) do
+  def get_spec(op, code) do
     Map.get(@spec_mappings, {op, code})
   end
 end

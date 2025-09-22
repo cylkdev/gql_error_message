@@ -27,15 +27,15 @@ defmodule GQLErrorMessage.CommonBridge do
 
   @impl true
   def get_spec(spec_store, op, %{code: code}) do
-    SpecStore.get(spec_store, op, code)
+    SpecStore.get_spec(spec_store, op, code)
   end
 
   def get_spec(spec_store, op, changeset) when is_struct(changeset, Ecto.Changeset) do
-    SpecStore.get(spec_store, op, :unprocessable_entity)
+    SpecStore.get_spec(spec_store, op, :unprocessable_entity)
   end
 
   def get_spec(spec_store, op, _term) do
-    SpecStore.get(spec_store, op, :internal_server_error)
+    SpecStore.get_spec(spec_store, op, :internal_server_error)
   end
 
   @impl true
@@ -52,6 +52,7 @@ defmodule GQLErrorMessage.CommonBridge do
 
   def translate_error(term, _, _) do
     GQLErrorMessage.Logger.error(@logger_prefix, "unknown error: #{inspect(term)}")
+
     [fallback_error()]
   end
 

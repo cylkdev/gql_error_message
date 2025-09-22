@@ -58,9 +58,8 @@ defmodule GQLErrorMessage do
       %Spec{} = spec ->
         translate(error, bridge, input, spec)
 
-      nil ->
-        raise "Bridge #{inspect(bridge)} did not return a spec " <>
-                "for operation: #{op}, error: #{inspect(error)}"
+      term ->
+        raise "Bridge #{inspect(bridge)} did not return a spec, got: #{inspect(term)}"
     end
   end
 

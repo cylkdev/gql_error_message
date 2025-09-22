@@ -17,7 +17,6 @@ if Code.ensure_loaded?(Absinthe) do
           opts
         ) do
       bridge = Keyword.get(opts, :bridge, GQLErrorMessage.CommonBridge)
-      error_key = opts[:error_key] || :user_errors
       op = operation_type(resolution)
 
       input =
@@ -39,7 +38,7 @@ if Code.ensure_loaded?(Absinthe) do
         [%ClientError{} | _] = gql_errors ->
           if op === :mutation do
             current_value = value || %{}
-            final_value = Map.put(current_value, error_key, to_jsonable_map(gql_errors, opts))
+            final_value = Map.put(current_value, :user_errors, to_jsonable_map(gql_errors, opts))
             %{resolution | errors: [], value: final_value}
           else
             %{resolution | errors: to_jsonable_map(gql_errors, opts), value: nil}
