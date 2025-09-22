@@ -1,11 +1,12 @@
 defmodule GQLErrorMessage.Config do
+  @moduledoc false
   @app :gql_error_message
 
-  def extensions do
-    Application.get_env(@app, :extensions) || %{}
+  def fallback_error do
+    Application.get_env(@app, :fallback_error)
   end
 
-  def fallback_error_message do
-    Application.get_env(@app, :fallback_error_message)
+  def specs do
+    Application.get_env(@app, :specs)
   end
 end

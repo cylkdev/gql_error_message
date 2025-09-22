@@ -1,10 +1,7 @@
 if Code.ensure_loaded?(ErrorMessage) do
-  defmodule GQLErrorMessage.Bridges.ErrorMessageBridge do
+  defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridge do
     alias GQLErrorMessage.{ClientError, Spec, ServerError}
 
-    @behaviour GQLErrorMessage.Bridge
-
-    @impl true
     @doc """
     Translates an error message into a list of GraphQL error structs.
 
@@ -19,7 +16,7 @@ if Code.ensure_loaded?(ErrorMessage) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.Bridges.ErrorMessageBridge.translate_error(error, input, spec)
+        ...> GQLErrorMessage.CommonBridge.ErrorMessageBridge.translate_error(error, input, spec)
         [%GQLErrorMessage.ServerError{message: "internal server error", extensions: %{}}]
     """
     @spec translate_error(error :: ErrorMessage.t(), input :: map(), spec :: Spec.t()) ::
@@ -66,20 +63,6 @@ if Code.ensure_loaded?(ErrorMessage) do
     defp replace_value_template(str, value) do
       String.replace(str, "%{value}", to_string(value))
     end
-
-    # The `intersect_paths` function walks a pair of nested data structures
-    # and collects the paths of fields they have in common. A “path” is just
-    # the sequence of keys or indexes you’d follow to reach a value.
-    #
-    # For example, the path [:profile, :name] means “go into the :profile map,
-    # then into the :name field.”. The function always starts from the first
-    # structure and only continues down a branch if the second structure also
-    # has that branch. At the end, it returns a list of all the overlapping
-    # paths where both sides share the same keys or indexes.
-    #
-    # This is used when we want to know exactly which parts of some user
-    # input line up with an error map, so we can point to the fields that are
-    # actually invalid.
 
     @doc false
     @spec intersect_paths(input :: map(), error_params :: map()) ::
@@ -132,6 +115,32 @@ if Code.ensure_loaded?(ErrorMessage) do
       else
         acc
       end
+    end
+  end
+else
+  defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridge do
+    @doc_missing_dependency """
+    The bridge adapter `GQLErrorMessage.CommonBridge.ErrorMessageBridge`
+    requires the `:error_message` dependency.
+
+    You are trying to use this adapter, but `:error_message` could not be found.
+
+    To fix this, add `:error_message` to your mix.exs deps:
+
+        defp deps do
+          [
+            {:error_message, "~> 0.3.0"}
+          ]
+        end
+
+    Then run:
+
+        mix deps.get
+    """
+
+    @doc false
+    def translate_error(_e, _input, _spec) do
+      raise @doc_missing_dependency
     end
   end
 end
