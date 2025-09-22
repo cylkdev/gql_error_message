@@ -1,5 +1,17 @@
 defmodule GQLErrorMessage.ServerError do
-  alias GQLErrorMessage.Serializer
+  @moduledoc """
+  Represents a server-side error in a GraphQL response.
+
+  This struct is used for internal server errors, such as database connection
+  failures or other unexpected issues. It corresponds to a top-level error in
+  the GraphQL response.
+
+  ## Fields
+
+    * `:message` - A string describing the error.
+    * `:extensions` - A map containing additional, arbitrary data about the error.
+  """
+  alias GQLErrorMessage.{Config, Serializer}
 
   defstruct [:message, :extensions]
 
@@ -20,7 +32,14 @@ defmodule GQLErrorMessage.ServerError do
   ]
 
   @doc """
-  Create a new `GQLErrorMessage.ServerError`.
+  Creates a new `ServerError` struct.
+
+  Accepts a keyword list or a map of options.
+
+  ## Options
+
+    * `message` (*required*) - The error message.
+    * `extensions` - A map of additional data. Defaults to `%{}`.
   """
   def new(opts \\ [])
 
@@ -33,7 +52,11 @@ defmodule GQLErrorMessage.ServerError do
   end
 
   @doc """
-  Convert a `GQLErrorMessage.ServerError` to a JSONable map.
+  Converts a `GQLErrorMessage.ServerError` to a JSON-serializable map.
+
+  ## Options
+
+    * `:serializer` - The module to use for serialization.
   """
   def to_jsonable_map(%__MODULE__{} = e, opts) do
     e
@@ -42,6 +65,6 @@ defmodule GQLErrorMessage.ServerError do
   end
 
   defp serializer(opts) do
-    opts[:serializer] || Serializer
+    opts[:serializer] || Config.serializer() || Serializer
   end
 end

@@ -1,7 +1,25 @@
-defmodule GQLErrorMessage.Lexicon do
+defmodule GQLErrorMessage.DefaultRepo do
+  @moduledoc """
+  The default repository for error specifications.
+
+  This module provides a pre-defined set of standard error
+  specifications for common HTTP status codes, categorized by
+  operation (`:mutation`, `:query`, `:subscription`).
+
+  ## Customization
+
+  You can override or extend the default specifications by providing
+  a `specs` list in your application's configuration:
+
+      config :gql_error_message, specs: [
+        %{operation: :query, kind: :client_error, code: :custom_error, ...}
+      ]
+
+  > Note: The `specs` configuration is only used at compile time.
+  """
   alias GQLErrorMessage.Spec
 
-  @behaviour GQLErrorMessage.SpecStore
+  @behaviour GQLErrorMessage.Repo
 
   @mutation_specs [
     %{
@@ -166,13 +184,23 @@ defmodule GQLErrorMessage.Lexicon do
     }
   ]
 
-  @specs @mutation_specs ++ @query_specs ++ @subscription_specs
-  @spec_mappings (GQLErrorMessage.Config.specs() || @specs)
-                 |> Enum.map(&Spec.new/1)
-                 |> Map.new(fn spec -> {{spec.operation, spec.code}, spec} end)
+  @specs Enum.map(@mutation_specs ++ @query_specs ++ @subscription_specs, &Spec.new/1)
+  @spec_mappings Map.new(@specs, fn spec -> {{spec.operation, spec.code}, spec} end)
 
-  @impl GQLErrorMessage.SpecStore
-  def get_spec(op, code) do
-    Map.get(@spec_mappings, {op, code})
+  @impl true
+  @doc """
+  Returns the list of all error specifications.
+  """
+  def list, do: @specs
+
+  @impl true
+  @doc """
+  Retrieves an error specification by operation and code.
+  """
+  def get(op, code) do
+    case @spec_mappings do
+      %{{^op, ^code} => value} -> value
+      _ -> nil
+    end
   end
 end

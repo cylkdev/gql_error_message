@@ -1,5 +1,22 @@
 defmodule GQLErrorMessage.Serializer do
-  @moduledoc false
+  @moduledoc """
+  The default serializer for converting Elixir terms into
+  JSON-compatible maps.
+
+  This module recursively traverses data structures and
+  converts them into a format that can be safely encoded
+  as JSON. It handles common Elixir types, including:
+
+    * `Date`, `Time`, `DateTime`, `NaiveDateTime` (converted to ISO 8601 strings)
+    * Structs (converted to a map with `:struct` and `:data` keys)
+    * Maps, lists, and tuples
+    * Atoms (converted to strings)
+  """
+
+  @doc """
+  Recursively converts a term into a JSON-serializable map or value.
+  """
+  def to_jsonable_map(term)
 
   def to_jsonable_map(%Date{} = date), do: Date.to_iso8601(date)
 

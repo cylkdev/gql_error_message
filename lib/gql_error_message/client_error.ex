@@ -1,5 +1,20 @@
 defmodule GQLErrorMessage.ClientError do
-  alias GQLErrorMessage.Serializer
+  @moduledoc """
+  Represents a client-side error that can be returned in a
+  GraphQL response.
+
+  This struct is typically used for input validation errors
+  and corresponds to a user error in the GraphQL response,
+  pointing to a specific field.
+
+  ## Fields
+
+    * `:field` - A list of atoms or strings representing the
+      path to the invalid input field.
+
+    * `:message` - A string describing the error.
+  """
+  alias GQLErrorMessage.{Config, Serializer}
 
   defstruct [:field, :message]
 
@@ -20,7 +35,14 @@ defmodule GQLErrorMessage.ClientError do
   ]
 
   @doc """
-  Create a new `GQLErrorMessage.ClientError`.
+  Creates a new `ClientError` struct.
+
+  Accepts a keyword list or a map of options.
+
+  ## Options
+
+    * `field` (*required*) - The path to the invalid field.
+    * `message` (*required*) - The error message.
   """
   def new(opts \\ [])
 
@@ -33,7 +55,11 @@ defmodule GQLErrorMessage.ClientError do
   end
 
   @doc """
-  Convert a `GQLErrorMessage.ClientError` to a JSONable map.
+  Converts a `GQLErrorMessage.ClientError` to a JSON-serializable map.
+
+  ## Options
+
+    * `:serializer` - The module to use for serialization.
   """
   def to_jsonable_map(%__MODULE__{} = e, opts) do
     e
@@ -42,6 +68,6 @@ defmodule GQLErrorMessage.ClientError do
   end
 
   defp serializer(opts) do
-    opts[:serializer] || Serializer
+    opts[:serializer] || Config.serializer() || Serializer
   end
 end

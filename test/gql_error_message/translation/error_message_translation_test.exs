@@ -1,38 +1,38 @@
-defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
+defmodule GQLErrorMessage.Translation.ErrorMessageTranslationTest do
   use ExUnit.Case, async: true
-  doctest GQLErrorMessage.CommonBridge.ErrorMessageBridge
+  doctest GQLErrorMessage.Translation.ErrorMessageTranslation
 
-  alias GQLErrorMessage.CommonBridge.ErrorMessageBridge
+  alias GQLErrorMessage.Translation.ErrorMessageTranslation
   alias GQLErrorMessage.{Spec, ClientError, ServerError}
 
   test "intersect_paths/2 finds common paths in nested structures" do
     # Simple shallow match
     input = %{id: 1, other: 2}
     params = %{id: 1, extra: 3}
-    assert [{[:id], 1}] = ErrorMessageBridge.intersect_paths(input, params)
+    assert [{[:id], 1}] = ErrorMessageTranslation.intersect_paths(input, params)
 
     # Nested map match
     # Only `:user -> :age` overlaps, `:user -> :name` and `:active` have no counterpart in params
     input = %{user: %{name: "alice", age: 30}, active: true}
     params = %{user: %{age: 30}}
-    assert [{[:user, :age], 30}] = ErrorMessageBridge.intersect_paths(input, params)
+    assert [{[:user, :age], 30}] = ErrorMessageTranslation.intersect_paths(input, params)
 
     # Multiple matches at same depth
     # Order is not guaranteed, so compare as sets
     input = %{a: 1, b: 2, c: 3}
     params = %{a: 1, b: 2}
-    paths = ErrorMessageBridge.intersect_paths(input, params)
+    paths = ErrorMessageTranslation.intersect_paths(input, params)
     assert MapSet.new(paths) == MapSet.new([{[:a], 1}, {[:b], 2}])
 
     # Lists: exact list match
     input = %{values: [1, 2, 3]}
     params = %{values: [1, 2, 3]}
-    assert [{[:values], [1, 2, 3]}] = ErrorMessageBridge.intersect_paths(input, params)
+    assert [{[:values], [1, 2, 3]}] = ErrorMessageTranslation.intersect_paths(input, params)
 
     # Lists: no match if values differ
     input = %{values: [1, 2, 3]}
     params = %{values: [1, 2, 4]}
-    assert [] = ErrorMessageBridge.intersect_paths(input, params)
+    assert [] = ErrorMessageTranslation.intersect_paths(input, params)
   end
 
   test "translate_error/3 builds ClientError structs for client_error specs" do
@@ -55,7 +55,7 @@ defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
 
     # Should produce a list with one ClientError pointing to the :id field
     assert [%ClientError{field: [:id], message: "invalid request"}] =
-             ErrorMessageBridge.translate_error(error, input, spec)
+             ErrorMessageTranslation.translate_error(error, input, spec)
   end
 
   test "translate_error/3 builds ServerError structs for server_error specs" do
@@ -86,7 +86,7 @@ defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
                message: "internal server error",
                extensions: extensions
              }
-           ] = ErrorMessageBridge.translate_error(error, input, spec)
+           ] = ErrorMessageTranslation.translate_error(error, input, spec)
 
     assert %{} === extensions
   end
@@ -114,7 +114,7 @@ defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
                field: [:age],
                message: "Invalid age: 17"
              }
-           ] = ErrorMessageBridge.translate_error(error, input, spec)
+           ] = ErrorMessageTranslation.translate_error(error, input, spec)
   end
 
   test "translate_error/3 prioritizes details[:gql] overrides for message and input" do
@@ -147,7 +147,7 @@ defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
                field: [:field1],
                message: "Override field1 error"
              }
-           ] = ErrorMessageBridge.translate_error(error, input, spec)
+           ] = ErrorMessageTranslation.translate_error(error, input, spec)
   end
 
   test "translate_error/3 merges spec.extensions with details[:gql][:extensions] for server errors" do
@@ -184,7 +184,7 @@ defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
                message: "bad gateway error at service",
                extensions: %{code: 502, note: "override", new_info: "xyz"}
              }
-           ] = ErrorMessageBridge.translate_error(error, input, spec)
+           ] = ErrorMessageTranslation.translate_error(error, input, spec)
   end
 
   test "translate_error/3 returns an empty list if no input fields intersect error details" do
@@ -209,6 +209,6 @@ defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridgeTest do
     input = %{field: "different"}
 
     # No overlapping values, no errors produced
-    assert [] = ErrorMessageBridge.translate_error(error, input, spec)
+    assert [] = ErrorMessageTranslation.translate_error(error, input, spec)
   end
 end

@@ -1,11 +1,13 @@
 # GQLErrorMessage
 
-**TODO: Add description**
+`GQLErrorMessage` provides a simple, transparent, standardized API for
+translating various Elixir error terms (like `Ecto.Changeset` or
+`ErrorMessage` structs) into GraphQL-compliant error messages.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `gql_error_message` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `gql_error_message` to your list of
+dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -15,7 +17,6 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/gql_error_message>.
+## Documentation
 
+Full documentation is available on [HexDocs](https://hexdocs.pm/gql_error_message).

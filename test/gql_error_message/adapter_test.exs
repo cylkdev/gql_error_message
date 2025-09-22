@@ -1,8 +1,8 @@
-defmodule GQLErrorMessage.BridgeTest do
+defmodule GQLErrorMessage.AdapterTest do
   use ExUnit.Case, async: true
-  doctest GQLErrorMessage.Bridge
+  doctest GQLErrorMessage.Adapter
 
-  defmodule DummyBridgeImpl do
+  defmodule MockImpl do
     def translate_error(error, input, spec) do
       {:called, error, input, spec}
     end
@@ -21,8 +21,8 @@ defmodule GQLErrorMessage.BridgeTest do
     }
 
     assert {:called, ^dummy_error, ^dummy_input, ^dummy_spec} =
-             GQLErrorMessage.Bridge.translate_error(
-               DummyBridgeImpl,
+             GQLErrorMessage.Adapter.translate_error(
+               MockImpl,
                dummy_error,
                dummy_input,
                dummy_spec

@@ -1,8 +1,51 @@
 if Code.ensure_loaded?(Absinthe) do
   defmodule GQLErrorMessage.Absinthe.Middleware do
-    @moduledoc false
+    @moduledoc """
+    A post-resolution Absinthe middleware for translating errors.
+
+    This middleware converts resolver errors into a standard GraphQL
+    error format (as defined by the specification) and places them
+    into the errors array of the response alongside any partial data.
+
+    ## Usage
+
+    Apply this middleware to a field in your Absinthe schema. It **must** be placed
+    *after* the `resolve` function.
+
+        field :create_user, :user_payload do
+          arg :input, non_null(:user_input)
+
+          resolve &Accounts.create_user/3
+
+          middleware GQLErrorMessage.Absinthe.Middleware
+        end
+
+    ## Error Handling
+
+      * **Client Errors**: For mutations, client errors are added to
+        a `user_errors` field in the response payload. For queries
+        and subscriptions, they are added to the top-level `errors`
+        list, and the data is set to `nil`.
+
+      * **Server Errors**: Server errors are always added to the
+        top-level `errors` list, and the data is set to `nil`.
+
+    ## Options
+
+      * `:input_path` - The path to the input arguments for mutations. Defaults to `[:input]`.
+      * All options accepted by `GQLErrorMessage.translate_error/4` are also supported.
+
+    > #### Warning {: .warning}
+    >
+    > This module requires `:absinthe` as a dependency.
+    """
     alias GQLErrorMessage.{ClientError, ServerError}
 
+    @doc """
+    The main entry point for the middleware.
+
+    It is called by Absinthe with the resolution struct and middleware options.
+    """
     def call(%Absinthe.Resolution{state: :resolved, errors: []} = resolution, _opts) do
       resolution
     end
@@ -16,7 +59,6 @@ if Code.ensure_loaded?(Absinthe) do
           } = resolution,
           opts
         ) do
-      bridge = Keyword.get(opts, :bridge, GQLErrorMessage.CommonBridge)
       op = operation_type(resolution)
 
       input =
@@ -34,7 +76,7 @@ if Code.ensure_loaded?(Absinthe) do
             args
         end
 
-      case Enum.flat_map(errors, &GQLErrorMessage.translate_error(op, &1, bridge, input, opts)) do
+      case Enum.flat_map(errors, &GQLErrorMessage.translate_error(op, &1, input, opts)) do
         [%ClientError{} | _] = gql_errors ->
           if op === :mutation do
             current_value = value || %{}

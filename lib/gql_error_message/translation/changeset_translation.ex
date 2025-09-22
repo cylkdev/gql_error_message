@@ -1,9 +1,24 @@
 if Code.ensure_loaded?(Ecto) do
-  defmodule GQLErrorMessage.CommonBridge.ChangesetBridge do
+  defmodule GQLErrorMessage.Translation.ChangesetTranslation do
+    @moduledoc """
+    Translates `Ecto.Changeset` errors into `GQLErrorMessage.ClientError` structs.
+
+    This API converts validation and constraint errors from changesets
+    into `GQLErrorMessage.ClientError` structs.
+
+    > #### Warning {: .warning}
+    >
+    > This module requires `:ecto` as a dependency.
+    """
     alias GQLErrorMessage.{ClientError, Spec}
 
     @doc """
-    Translates an error message into a list of GraphQL error structs.
+    Translates an `Ecto.Changeset` into a list of `GQLErrorMessage.ClientError`
+    structs.
+
+    Each error in the changeset is converted into a `GQLErrorMessage.ClientError`, with
+    the `field` corresponding to the changeset field and the `message` containing the
+    validation error text.
 
     ## Examples
 
@@ -16,7 +31,7 @@ if Code.ensure_loaded?(Ecto) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.CommonBridge.ChangesetBridge.translate_error(changeset, input, spec)
+        ...> GQLErrorMessage.Translation.ChangesetTranslation.translate_error(changeset, input, spec)
         [%GQLErrorMessage.ClientError{field: :name, message: "can't be blank"}]
     """
     @spec translate_error(changeset :: Ecto.Changeset.t(), input :: map(), spec :: Spec.t()) ::
@@ -42,14 +57,28 @@ if Code.ensure_loaded?(Ecto) do
     end
   end
 else
-  defmodule GQLErrorMessage.CommonBridge.ChangesetBridge do
+  defmodule GQLErrorMessage.Translation.ChangesetTranslation do
+    @moduledoc """
+    This is a stub module that is compiled when the `:ecto` dependency
+    is not available. All functions in this module will raise an error
+    when called.
+
+    To fix this, add `:ecto` to your `mix.exs` deps:
+
+        defp deps do
+          [
+            {:ecto, "~> 3.0"}
+          ]
+        end
+    """
+
     @doc_missing_dependency """
-    The bridge adapter `GQLErrorMessage.CommonBridge.ChangesetBridge`
+    The adapter `GQLErrorMessage.Translation.ChangesetTranslation`
     requires the `:ecto` dependency.
 
     You are trying to use this adapter, but `:ecto` could not be found.
 
-    To fix this, add `:ecto` to your mix.exs deps:
+    To fix this, add `:ecto` to your `mix.exs` deps:
 
         defp deps do
           [

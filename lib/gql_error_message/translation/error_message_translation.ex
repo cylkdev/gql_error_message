@@ -1,9 +1,39 @@
 if Code.ensure_loaded?(ErrorMessage) do
-  defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridge do
+  defmodule GQLErrorMessage.Translation.ErrorMessageTranslation do
+    @moduledoc """
+    Translates `ErrorMessage` structs into GraphQL-compatible errors.
+
+    This module converts `ErrorMessage` structs into `GQLErrorMessage.ClientError` or
+    `GQLErrorMessage.ServerError` structs. It intelligently finds the source of an
+    error by intersecting the GraphQL input with the error's parameters.
+
+    > #### Warning {: .warning}
+    >
+    > This module requires `:error_message` as a dependency.
+    """
     alias GQLErrorMessage.{ClientError, Spec, ServerError}
 
     @doc """
-    Translates an error message into a list of GraphQL error structs.
+    Translates an `ErrorMessage` struct into a list of error structs.
+
+    Based on the spec `kind`, this function generates either `GQLErrorMessage.ClientError` or
+    `GQLErrorMessage.ServerError` structs.
+
+    It identifies the source field(s) of the error by finding the intersection
+    between the `input` map and the parameters in the details map.
+
+    ## Message Templating
+
+    The error message supports `%{key}` and `%{value}` placeholders, which will be
+    replaced with the field name and value from the input that caused the error.
+
+    ## Overrides
+
+    The `details` map can contain a `:gql` key to customize the output:
+
+      * `details.gql.message` - Overrides the error message.
+      * `details.gql.input` - Overrides the `details.params` used for path intersection.
+      * `details.gql.extensions` - Merged into the extensions for `ServerError`s.
 
     ## Examples
 
@@ -16,7 +46,7 @@ if Code.ensure_loaded?(ErrorMessage) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.CommonBridge.ErrorMessageBridge.translate_error(error, input, spec)
+        ...> GQLErrorMessage.Translation.ErrorMessageTranslation.translate_error(error, input, spec)
         [%GQLErrorMessage.ServerError{message: "internal server error", extensions: %{}}]
     """
     @spec translate_error(error :: ErrorMessage.t(), input :: map(), spec :: Spec.t()) ::
@@ -118,9 +148,23 @@ if Code.ensure_loaded?(ErrorMessage) do
     end
   end
 else
-  defmodule GQLErrorMessage.CommonBridge.ErrorMessageBridge do
+  defmodule GQLErrorMessage.Translation.ErrorMessageTranslation do
+    @moduledoc """
+    This is a stub module that is compiled when the `:error_message` dependency
+    is not available. All functions in this module will raise an error
+    when called.
+
+    To fix this, add `:error_message` to your `mix.exs` deps:
+
+        defp deps do
+          [
+            {:error_message, "~> 0.3.0"}
+          ]
+        end
+    """
+
     @doc_missing_dependency """
-    The bridge adapter `GQLErrorMessage.CommonBridge.ErrorMessageBridge`
+    The adapter `GQLErrorMessage.Translation.ErrorMessageTranslation`
     requires the `:error_message` dependency.
 
     You are trying to use this adapter, but `:error_message` could not be found.
