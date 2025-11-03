@@ -9,12 +9,4 @@ defmodule GQLErrorMessage.Config do
   def fallback_error do
     Application.get_env(@app, :fallback_error)
   end
-
-  def repo do
-    Application.get_env(@app, :repo)
-  end
-
-  def serializer do
-    Application.get_env(@app, :serializer)
-  end
 end

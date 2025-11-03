@@ -39,9 +39,7 @@ defmodule GQLErrorMessage.MixProject do
     [
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:nimble_options, ">= 1.0.0"},
-
-      # optional
-      {:error_message, ">= 0.1.0", optional: true},
+      {:error_message, ">= 0.1.0"},
       {:absinthe, ">= 1.0.0", optional: true},
       {:ecto, ">= 1.0.0", optional: true}
     ]
@@ -65,11 +63,11 @@ defmodule GQLErrorMessage.MixProject do
         "Translation Pipeline": [
           GQLErrorMessage.Adapter,
           GQLErrorMessage.Spec,
-          GQLErrorMessage.Repo,
-          GQLErrorMessage.DefaultRepo,
+          GQLErrorMessage.Codex,
+          GQLErrorMessage.DefaultCodex,
           GQLErrorMessage.Translation,
-          GQLErrorMessage.Translation.ChangesetTranslation,
-          GQLErrorMessage.Translation.ErrorMessageTranslation
+          GQLErrorMessage.CommonError.ChangesetTranslation,
+          GQLErrorMessage.CommonError.ErrorMessageTranslation
         ],
         "Absinthe API": [
           GQLErrorMessage.Absinthe,

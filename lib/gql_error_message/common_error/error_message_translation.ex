@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(ErrorMessage) do
-  defmodule GQLErrorMessage.Translation.ErrorMessageTranslation do
+  defmodule GQLErrorMessage.CommonError.ErrorMessageTranslation do
     @moduledoc """
     Translates `ErrorMessage` structs into GraphQL-compatible errors.
 
@@ -46,41 +46,48 @@ if Code.ensure_loaded?(ErrorMessage) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.Translation.ErrorMessageTranslation.translate_error(error, input, spec)
+        ...> GQLErrorMessage.CommonError.ErrorMessageTranslation.handle_translate(error, input, spec)
         [%GQLErrorMessage.ServerError{message: "internal server error", extensions: %{}}]
     """
-    @spec translate_error(error :: ErrorMessage.t(), input :: map(), spec :: Spec.t()) ::
+    @spec handle_translate(error :: ErrorMessage.t(), input :: map(), spec :: Spec.t()) ::
             list(ClientError.t() | ServerError.t())
-    def translate_error(%ErrorMessage{} = e, input, %Spec{kind: :server_error} = spec) do
+    def handle_translate(%ErrorMessage{} = e, user_input, %Spec{kind: :server_error} = spec) do
       details = e.details || %{}
-      msg = details[:gql][:message] || e.message || spec.message
-      error_params = details[:gql][:input] || details[:params] || %{}
-      extensions = Map.merge(spec.extensions || %{}, details[:gql][:extensions] || %{})
+      gql_details = details[:gql] || %{}
+      msg = gql_details[:message] || e.message || spec.message
+      error_inputs = gql_details[:input] || details[:params] || Map.delete(details, :gql)
 
-      input
-      |> intersect_paths(error_params)
+      extensions =
+        Map.merge(
+          spec.extensions || %{},
+          details[:gql][:extensions] || details[:extensions] || %{}
+        )
+
+      user_input
+      |> intersecting_paths(error_inputs)
       |> Enum.map(fn {field, value} ->
         key = List.last(field)
-        final_msg = replace_kv_template(msg, key, value)
+        final_msg = replace_key_value_template(msg, key, value)
         %ServerError{message: final_msg, extensions: extensions}
       end)
     end
 
-    def translate_error(%ErrorMessage{} = e, input, %Spec{kind: :client_error} = spec) do
+    def handle_translate(%ErrorMessage{} = e, user_input, %Spec{kind: :client_error} = spec) do
       details = e.details || %{}
-      msg = details[:gql][:message] || e.message || spec.message
-      error_params = details[:gql][:input] || details[:params] || %{}
+      gql_details = details[:gql] || %{}
+      msg = gql_details[:message] || e.message || spec.message
+      error_inputs = gql_details[:input] || details[:params] || Map.delete(details, :gql)
 
-      input
-      |> intersect_paths(error_params)
+      user_input
+      |> intersecting_paths(error_inputs)
       |> Enum.map(fn {field, value} ->
         key = List.last(field)
-        final_msg = replace_kv_template(msg, key, value)
+        final_msg = replace_key_value_template(msg, key, value)
         %ClientError{field: field, message: final_msg}
       end)
     end
 
-    defp replace_kv_template(str, key, value) do
+    defp replace_key_value_template(str, key, value) do
       str
       |> replace_key_template(key)
       |> replace_value_template(value)
@@ -95,18 +102,18 @@ if Code.ensure_loaded?(ErrorMessage) do
     end
 
     @doc false
-    @spec intersect_paths(input :: map(), error_params :: map()) ::
+    @spec intersecting_paths(input :: map(), error_inputs :: map()) ::
             list({path :: list(), value :: term()})
-    def intersect_paths(input, error_params) do
+    def intersecting_paths(input, error_inputs) do
       input
-      |> collect_int_paths(error_params, [], [])
+      |> collect_intersected_paths(error_inputs, [], [])
       |> Enum.reverse()
     end
 
-    defp collect_int_paths(inputs, error_value, path, acc) when is_list(inputs) do
+    defp collect_intersected_paths(inputs, error_value, path, acc) when is_list(inputs) do
       if Keyword.keyword?(inputs) do
         Enum.reduce(inputs, acc, fn input, acc ->
-          collect_int_paths(input, error_value, path, acc)
+          collect_intersected_paths(input, error_value, path, acc)
         end)
       else
         if inputs === error_value do
@@ -117,29 +124,29 @@ if Code.ensure_loaded?(ErrorMessage) do
       end
     end
 
-    defp collect_int_paths(input, errors, path, acc) when is_list(errors) do
+    defp collect_intersected_paths(input, errors, path, acc) when is_list(errors) do
       Enum.reduce(errors, acc, fn error, acc ->
-        collect_int_paths(input, error, path, acc)
+        collect_intersected_paths(input, error, path, acc)
       end)
     end
 
-    defp collect_int_paths({input_key, input_val}, error_params, path, acc) do
-      if Map.has_key?(error_params, input_key) do
-        next_error_params = Map.fetch!(error_params, input_key)
+    defp collect_intersected_paths({input_key, input_val}, error_inputs, path, acc) do
+      if Map.has_key?(error_inputs, input_key) do
+        next_error_inputs = Map.fetch!(error_inputs, input_key)
         next_path = [input_key | path]
-        collect_int_paths(input_val, next_error_params, next_path, acc)
+        collect_intersected_paths(input_val, next_error_inputs, next_path, acc)
       else
         acc
       end
     end
 
-    defp collect_int_paths(input, error_params, path, acc) when is_map(input) do
+    defp collect_intersected_paths(input, error_inputs, path, acc) when is_map(input) do
       input
       |> Map.to_list()
-      |> collect_int_paths(error_params, path, acc)
+      |> collect_intersected_paths(error_inputs, path, acc)
     end
 
-    defp collect_int_paths(user_leaf, error_leaf, path, acc) do
+    defp collect_intersected_paths(user_leaf, error_leaf, path, acc) do
       if user_leaf === error_leaf do
         [{Enum.reverse(path), user_leaf} | acc]
       else
@@ -148,7 +155,7 @@ if Code.ensure_loaded?(ErrorMessage) do
     end
   end
 else
-  defmodule GQLErrorMessage.Translation.ErrorMessageTranslation do
+  defmodule GQLErrorMessage.CommonError.ErrorMessageTranslation do
     @moduledoc """
     This is a stub module that is compiled when the `:error_message` dependency
     is not available. All functions in this module will raise an error
@@ -164,7 +171,7 @@ else
     """
 
     @doc_missing_dependency """
-    The adapter `GQLErrorMessage.Translation.ErrorMessageTranslation`
+    The adapter `GQLErrorMessage.CommonError.ErrorMessageTranslation`
     requires the `:error_message` dependency.
 
     You are trying to use this adapter, but `:error_message` could not be found.
@@ -183,7 +190,7 @@ else
     """
 
     @doc false
-    def translate_error(_e, _input, _spec) do
+    def handle_translate(_e, _input, _spec) do
       raise @doc_missing_dependency
     end
   end

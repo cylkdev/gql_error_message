@@ -21,7 +21,7 @@ defmodule GQLErrorMessage.Adapter do
   Implementations should inspect the `error` term to determine which `Spec` to
   retrieve from the `repo`.
   """
-  @callback get(repo :: module(), op :: atom(), error :: term()) :: Spec.t() | nil
+  @callback get_spec(repo :: module(), op :: atom(), error :: term()) :: Spec.t() | nil
 
   @doc """
   The callback for translating an error into a standard error struct.
@@ -29,20 +29,25 @@ defmodule GQLErrorMessage.Adapter do
   Implementations should use the `error` term and the retrieved `spec` to
   construct one or more `GQLErrorMessage.ClientError` or `GQLErrorMessage.ServerError` structs.
   """
-  @callback translate_error(error :: term(), input :: map(), spec :: Spec.t()) ::
+  @callback handle_translate(error :: term(), input :: map(), spec :: Spec.t()) ::
               ClientError.t() | ServerError.t() | list(ClientError.t() | ServerError.t())
 
   @doc """
-  Delegates `get` to the specified adapter module.
+  Delegates `get_spec` to the specified adapter module.
   """
-  def get(module, repo, op, error) do
-    module.get(repo, op, error)
+  def get_spec(module, repo, op, error) do
+    case module.get_spec(repo, op, error) do
+      %Spec{} = spec -> spec
+      term -> raise "Adapter #{inspect(module)} did not return a spec, got: #{inspect(term)}"
+    end
   end
 
   @doc """
-  Delegates `translate_error` to the specified adapter module.
+  Delegates `handle_translate` to the specified adapter module.
   """
-  def translate_error(module, error, input, spec) do
-    module.translate_error(error, input, spec)
+  def handle_translate(module, error, input, spec) do
+    error
+    |> module.handle_translate(input, spec)
+    |> List.wrap()
   end
 end

@@ -3,12 +3,12 @@ defmodule GQLErrorMessage.AdapterTest do
   doctest GQLErrorMessage.Adapter
 
   defmodule MockImpl do
-    def translate_error(error, input, spec) do
+    def handle_translate(error, input, spec) do
       {:called, error, input, spec}
     end
   end
 
-  test "translate_error/4 delegates to the adapter's translate_error/3" do
+  test "handle_translate/4 delegates to the adapter's handle_translate/3" do
     dummy_error = %{some: "error"}
     dummy_input = %{"field" => 123}
 
@@ -21,7 +21,7 @@ defmodule GQLErrorMessage.AdapterTest do
     }
 
     assert {:called, ^dummy_error, ^dummy_input, ^dummy_spec} =
-             GQLErrorMessage.Adapter.translate_error(
+             GQLErrorMessage.Adapter.handle_translate(
                MockImpl,
                dummy_error,
                dummy_input,

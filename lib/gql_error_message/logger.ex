@@ -10,6 +10,13 @@ defmodule GQLErrorMessage.Logger do
   end
 
   @doc false
+  def warning(prefix, message) do
+    prefix
+    |> format_message(message)
+    |> Logger.warning()
+  end
+
+  @doc false
   def error(prefix, message) do
     prefix
     |> format_message(message)

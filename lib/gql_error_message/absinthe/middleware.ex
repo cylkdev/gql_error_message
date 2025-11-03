@@ -59,6 +59,7 @@ if Code.ensure_loaded?(Absinthe) do
           } = resolution,
           opts
         ) do
+      adapter = Keyword.get(opts, :adapter, GQLErrorMessage.Translation)
       op = operation_type(resolution)
 
       input =
@@ -76,7 +77,7 @@ if Code.ensure_loaded?(Absinthe) do
             args
         end
 
-      case Enum.flat_map(errors, &GQLErrorMessage.translate_error(op, &1, input, opts)) do
+      case Enum.flat_map(errors, &GQLErrorMessage.translate_error(adapter, op, &1, input, opts)) do
         [%ClientError{} | _] = gql_errors ->
           if op === :mutation do
             current_value = value || %{}
@@ -88,6 +89,9 @@ if Code.ensure_loaded?(Absinthe) do
 
         [%ServerError{} | _] = gql_errors ->
           %{resolution | errors: to_jsonable_map(gql_errors, opts), value: nil}
+
+        [] ->
+          raise "Adapter #{inspect(adapter)} failed to translate errors\n\nerrors: #{inspect(errors)}"
       end
     end
 

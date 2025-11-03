@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(Ecto) do
-  defmodule GQLErrorMessage.Translation.ChangesetTranslation do
+  defmodule GQLErrorMessage.CommonError.ChangesetTranslation do
     @moduledoc """
     Translates `Ecto.Changeset` errors into `GQLErrorMessage.ClientError` structs.
 
@@ -31,12 +31,12 @@ if Code.ensure_loaded?(Ecto) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.Translation.ChangesetTranslation.translate_error(changeset, input, spec)
+        ...> GQLErrorMessage.CommonError.ChangesetTranslation.handle_translate(changeset, input, spec)
         [%GQLErrorMessage.ClientError{field: :name, message: "can't be blank"}]
     """
-    @spec translate_error(changeset :: Ecto.Changeset.t(), input :: map(), spec :: Spec.t()) ::
+    @spec handle_translate(changeset :: Ecto.Changeset.t(), input :: map(), spec :: Spec.t()) ::
             list(ClientError.t())
-    def translate_error(%Ecto.Changeset{} = changeset, _input, _spec) do
+    def handle_translate(%Ecto.Changeset{} = changeset, _input, _spec) do
       changeset
       |> errors_on()
       |> Enum.reduce([], fn {field, msgs}, acc ->
@@ -57,7 +57,7 @@ if Code.ensure_loaded?(Ecto) do
     end
   end
 else
-  defmodule GQLErrorMessage.Translation.ChangesetTranslation do
+  defmodule GQLErrorMessage.CommonError.ChangesetTranslation do
     @moduledoc """
     This is a stub module that is compiled when the `:ecto` dependency
     is not available. All functions in this module will raise an error
@@ -73,7 +73,7 @@ else
     """
 
     @doc_missing_dependency """
-    The adapter `GQLErrorMessage.Translation.ChangesetTranslation`
+    The adapter `GQLErrorMessage.CommonError.ChangesetTranslation`
     requires the `:ecto` dependency.
 
     You are trying to use this adapter, but `:ecto` could not be found.
@@ -92,7 +92,7 @@ else
     """
 
     @doc false
-    def translate_error(_changeset, _input, _spec) do
+    def handle_translate(_changeset, _input, _spec) do
       raise @doc_missing_dependency
     end
   end

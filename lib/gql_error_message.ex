@@ -23,7 +23,7 @@ defmodule GQLErrorMessage do
     * `GQLErrorMessage.Adapter` - Adapters contain the logic for how to
       translate different error terms.
 
-    * `GQLErrorMessage.Repo` - Repositories are responsible for storing
+    * `GQLErrorMessage.Codex` - Repositories are responsible for storing
       and retrieving error specifications.
 
     * `GQLErrorMessage.Spec` - Specifications are blueprints that define the
@@ -77,7 +77,7 @@ defmodule GQLErrorMessage do
   ### Repositories
 
   A `Repo` is a module responsible for storing and retrieving `Spec`s. The
-  library includes `GQLErrorMessage.DefaultRepo`, which is pre-populated
+  library includes `GQLErrorMessage.DefaultCodex`, which is pre-populated
   with common error specifications.
 
   ### Specifications
@@ -101,19 +101,11 @@ defmodule GQLErrorMessage do
 
       config :gql_error_message,
         adapter: MyApp.CustomAdapter,
-        repo: MyApp.CustomRepo,
+        codex: MyApp.CustomRepo,
         serializer: MyApp.CustomSerializer,
         fallback_error: %{message: "An unexpected error occurred."}
   """
-  alias GQLErrorMessage.{
-    Adapter,
-    ClientError,
-    Config,
-    Spec,
-    ServerError
-  }
-
-  @logger_prefix "GQLErrorMessage"
+  alias GQLErrorMessage.Adapter
 
   @operations [:mutation, :query, :subscription]
 
@@ -122,8 +114,8 @@ defmodule GQLErrorMessage do
 
   ## Options
 
-    * `repo` - The repository to use for looking up error specs. Defaults to
-      `GQLErrorMessage.DefaultRepo`.
+    * `codex` - The codexsitory to use for looking up error specs. Defaults to
+      `GQLErrorMessage.DefaultCodex`.
     * `fallback_error` - The fallback `GQLErrorMessage.ServerError` struct to
       use when no spec is found.
 
@@ -132,102 +124,18 @@ defmodule GQLErrorMessage do
       iex> operation = :query
       ...> error = %ErrorMessage{code: :bad_request, message: "invalid request", details: %{params: %{id: 1}}}
       ...> input = %{id: 1}
-      ...> GQLErrorMessage.translate_error(operation, error, input)
+      ...> GQLErrorMessage.translate_error(GQLErrorMessage.Translation, operation, error, input)
       [%GQLErrorMessage.ClientError{field: [:id], message: "invalid request"}]
 
       iex> operation = :query
       ...> error = %ErrorMessage{code: :internal_server_error, message: "internal server error", details: %{params: %{users: %{id: [1, 2, 3]}}}}
       ...> input = %{name: "alice", users: %{id: [1, 2, 3]}}
-      ...> GQLErrorMessage.translate_error(operation, error, input)
+      ...> GQLErrorMessage.translate_error(GQLErrorMessage.Translation, operation, error, input)
       [%GQLErrorMessage.ServerError{message: "internal server error", extensions: %{}}]
   """
-  @spec translate_error(
-          op :: atom(),
-          error :: map(),
-          input :: map()
-        ) :: list()
-  @spec translate_error(
-          op :: atom(),
-          error :: map(),
-          input :: map(),
-          opts :: keyword()
-        ) :: list()
-  def translate_error(op, error, input, opts \\ []) when op in @operations do
-    adapter = opts[:adapter] || Config.adapter() || GQLErrorMessage.Translation
-    repo = opts[:repo] || Config.repo() || GQLErrorMessage.DefaultRepo
-
-    case Adapter.get(adapter, repo, op, error) do
-      %Spec{} = spec ->
-        translate(adapter, error, input, spec)
-
-      term ->
-        raise "Adapter #{inspect(adapter)} did not return a spec, got: #{inspect(term)}"
-    end
-  end
-
-  defp translate(adapter, error, input, %Spec{kind: :client_error} = spec) do
-    adapter
-    |> Adapter.translate_error(error, input, spec)
-    |> List.wrap()
-    |> Enum.map(fn
-      %ClientError{} = client_error -> client_error
-      term -> raise "Expected a `GQLErrorMessage.ClientError` struct, got: #{inspect(term)}"
-    end)
-    |> then(fn
-      [] ->
-        GQLErrorMessage.Logger.debug(
-          @logger_prefix,
-          """
-          Adapter #{inspect(adapter)} did not return any errors.
-
-          error:
-          #{inspect(error)}
-
-          input:
-          #{inspect(input)}
-
-          spec:
-          #{inspect(spec)}
-          """
-        )
-
-        []
-
-      results ->
-        results
-    end)
-  end
-
-  defp translate(adapter, error, input, %Spec{kind: :server_error} = spec) do
-    adapter
-    |> Adapter.translate_error(error, input, spec)
-    |> List.wrap()
-    |> Enum.map(fn
-      %ServerError{} = server_error -> server_error
-      term -> raise "Expected a `GQLErrorMessage.ServerError` struct, got: #{inspect(term)}"
-    end)
-    |> then(fn
-      [] ->
-        GQLErrorMessage.Logger.debug(
-          @logger_prefix,
-          """
-          Adapter #{inspect(adapter)} did not return any errors.
-
-          error:
-          #{inspect(error)}
-
-          input:
-          #{inspect(input)}
-
-          spec:
-          #{inspect(spec)}
-          """
-        )
-
-        []
-
-      results ->
-        results
-    end)
+  def translate_error(adapter, op, error, input, opts \\ []) when op in @operations do
+    codex = opts[:codex] || GQLErrorMessage.DefaultCodex
+    spec = Adapter.get_spec(adapter, codex, op, error)
+    Adapter.handle_translate(adapter, error, input, spec)
   end
 end

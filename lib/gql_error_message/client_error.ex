@@ -14,7 +14,7 @@ defmodule GQLErrorMessage.ClientError do
 
     * `:message` - A string describing the error.
   """
-  alias GQLErrorMessage.{Config, Serializer}
+  alias GQLErrorMessage.Serializer
 
   defstruct [:field, :message]
 
@@ -68,6 +68,6 @@ defmodule GQLErrorMessage.ClientError do
   end
 
   defp serializer(opts) do
-    opts[:serializer] || Config.serializer() || Serializer
+    opts[:serializer] || Serializer
   end
 end

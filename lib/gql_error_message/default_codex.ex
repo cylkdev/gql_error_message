@@ -1,6 +1,6 @@
-defmodule GQLErrorMessage.DefaultRepo do
+defmodule GQLErrorMessage.DefaultCodex do
   @moduledoc """
-  The default repository for error specifications.
+  The default store for error specifications.
 
   This module provides a pre-defined set of standard error
   specifications for common HTTP status codes, categorized by
@@ -19,7 +19,7 @@ defmodule GQLErrorMessage.DefaultRepo do
   """
   alias GQLErrorMessage.Spec
 
-  @behaviour GQLErrorMessage.Repo
+  @behaviour GQLErrorMessage.Codex
 
   @mutation_specs [
     %{
@@ -197,7 +197,7 @@ defmodule GQLErrorMessage.DefaultRepo do
   @doc """
   Retrieves an error specification by operation and code.
   """
-  def get(op, code) do
+  def spec_for(op, code) do
     case @spec_mappings do
       %{{^op, ^code} => value} -> value
       _ -> nil

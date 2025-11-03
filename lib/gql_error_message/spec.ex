@@ -4,7 +4,7 @@ defmodule GQLErrorMessage.Spec do
 
   This struct contains the core properties that define how an error should be
   categorized and what information it should contain. Specs are stored in and
-  retrieved from a `Repo` module (e.g., `GQLErrorMessage.DefaultRepo`).
+  retrieved from a `Repo` module (e.g., `GQLErrorMessage.DefaultCodex`).
 
   ## Fields
 

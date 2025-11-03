@@ -11,7 +11,7 @@ defmodule GQLErrorMessage.ServerError do
     * `:message` - A string describing the error.
     * `:extensions` - A map containing additional, arbitrary data about the error.
   """
-  alias GQLErrorMessage.{Config, Serializer}
+  alias GQLErrorMessage.Serializer
 
   defstruct [:message, :extensions]
 
@@ -65,6 +65,6 @@ defmodule GQLErrorMessage.ServerError do
   end
 
   defp serializer(opts) do
-    opts[:serializer] || Config.serializer() || Serializer
+    opts[:serializer] || Serializer
   end
 end
