@@ -19,7 +19,7 @@ defmodule GQLErrorMessage.Translation do
     ServerError
   }
 
-  alias GQLErrorMessage.CommonError.{
+  alias GQLErrorMessage.Translator.{
     ChangesetTranslation,
     ErrorMessageTranslation
   }
@@ -69,8 +69,8 @@ defmodule GQLErrorMessage.Translation do
   This function delegates the translation to a specialized module based on the
   error's type:
 
-    * `ErrorMessage`: `GQLErrorMessage.CommonError.ErrorMessageTranslation`
-    * `Ecto.Changeset`: `GQLErrorMessage.CommonError.ChangesetTranslation`
+    * `ErrorMessage`: `GQLErrorMessage.Translator.ErrorMessageTranslation`
+    * `Ecto.Changeset`: `GQLErrorMessage.Translator.ChangesetTranslation`
     * Any other term: Returns a fallback `ServerError`
 
   ### Examples
@@ -84,7 +84,7 @@ defmodule GQLErrorMessage.Translation do
         message: "unauthorized",
         extensions: %{}
       }
-      GQLErrorMessage.CommonError.handle_translate(error, input, spec)
+      GQLErrorMessage.Translator.handle_translate(error, input, spec)
   """
   def handle_translate(%ErrorMessage{code: _} = error, input, spec) do
     with [] <- ErrorMessageTranslation.handle_translate(error, input, spec) do

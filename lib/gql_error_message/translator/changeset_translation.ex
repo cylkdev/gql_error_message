@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(Ecto) do
-  defmodule GQLErrorMessage.CommonError.ChangesetTranslation do
+  defmodule GQLErrorMessage.Translator.ChangesetTranslation do
     @moduledoc """
     Translates `Ecto.Changeset` errors into `GQLErrorMessage.ClientError` structs.
 
@@ -31,7 +31,7 @@ if Code.ensure_loaded?(Ecto) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.CommonError.ChangesetTranslation.handle_translate(changeset, input, spec)
+        ...> GQLErrorMessage.Translator.ChangesetTranslation.handle_translate(changeset, input, spec)
         [%GQLErrorMessage.ClientError{field: :name, message: "can't be blank"}]
     """
     @spec handle_translate(changeset :: Ecto.Changeset.t(), input :: map(), spec :: Spec.t()) ::
@@ -57,7 +57,7 @@ if Code.ensure_loaded?(Ecto) do
     end
   end
 else
-  defmodule GQLErrorMessage.CommonError.ChangesetTranslation do
+  defmodule GQLErrorMessage.Translator.ChangesetTranslation do
     @moduledoc """
     This is a stub module that is compiled when the `:ecto` dependency
     is not available. All functions in this module will raise an error
@@ -73,7 +73,7 @@ else
     """
 
     @doc_missing_dependency """
-    The adapter `GQLErrorMessage.CommonError.ChangesetTranslation`
+    The adapter `GQLErrorMessage.Translator.ChangesetTranslation`
     requires the `:ecto` dependency.
 
     You are trying to use this adapter, but `:ecto` could not be found.

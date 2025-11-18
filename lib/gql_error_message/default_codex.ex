@@ -46,6 +46,13 @@ defmodule GQLErrorMessage.DefaultCodex do
     %{
       operation: :mutation,
       kind: :client_error,
+      code: :not_found,
+      message: "not found",
+      extensions: %{}
+    },
+    %{
+      operation: :mutation,
+      kind: :client_error,
       code: :unprocessable_entity,
       message: "unprocessable entity",
       extensions: %{}
@@ -104,6 +111,13 @@ defmodule GQLErrorMessage.DefaultCodex do
     },
     %{
       operation: :query,
+      kind: :client_error,
+      code: :not_found,
+      message: "not found",
+      extensions: %{}
+    },
+    %{
+      operation: :query,
       kind: :server_error,
       code: :internal_server_error,
       message: "internal server error",
@@ -156,6 +170,13 @@ defmodule GQLErrorMessage.DefaultCodex do
     },
     %{
       operation: :subscription,
+      kind: :client_error,
+      code: :not_found,
+      message: "not found",
+      extensions: %{}
+    },
+    %{
+      operation: :subscription,
       kind: :server_error,
       code: :internal_server_error,
       message: "internal server error",
@@ -200,7 +221,15 @@ defmodule GQLErrorMessage.DefaultCodex do
   def spec_for(op, code) do
     case @spec_mappings do
       %{{^op, ^code} => value} -> value
-      _ -> nil
+      _ ->
+        Spec.new(%{
+          operation: op,
+          kind: :server_error,
+          code: :internal_server_error,
+          message: "an unknown error occurred",
+          extensions: %{}
+        })
+
     end
   end
 end

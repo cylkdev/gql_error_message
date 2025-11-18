@@ -66,8 +66,8 @@ defmodule GQLErrorMessage.MixProject do
           GQLErrorMessage.Codex,
           GQLErrorMessage.DefaultCodex,
           GQLErrorMessage.Translation,
-          GQLErrorMessage.CommonError.ChangesetTranslation,
-          GQLErrorMessage.CommonError.ErrorMessageTranslation
+          GQLErrorMessage.Translator.ChangesetTranslation,
+          GQLErrorMessage.Translator.ErrorMessageTranslation
         ],
         "Absinthe API": [
           GQLErrorMessage.Absinthe,

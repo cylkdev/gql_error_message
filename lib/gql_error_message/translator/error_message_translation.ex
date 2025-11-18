@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(ErrorMessage) do
-  defmodule GQLErrorMessage.CommonError.ErrorMessageTranslation do
+  defmodule GQLErrorMessage.Translator.ErrorMessageTranslation do
     @moduledoc """
     Translates `ErrorMessage` structs into GraphQL-compatible errors.
 
@@ -46,7 +46,7 @@ if Code.ensure_loaded?(ErrorMessage) do
         ...>   message: "internal server error",
         ...>   extensions: %{}
         ...> }
-        ...> GQLErrorMessage.CommonError.ErrorMessageTranslation.handle_translate(error, input, spec)
+        ...> GQLErrorMessage.Translator.ErrorMessageTranslation.handle_translate(error, input, spec)
         [%GQLErrorMessage.ServerError{message: "internal server error", extensions: %{}}]
     """
     @spec handle_translate(error :: ErrorMessage.t(), input :: map(), spec :: Spec.t()) ::
@@ -155,7 +155,7 @@ if Code.ensure_loaded?(ErrorMessage) do
     end
   end
 else
-  defmodule GQLErrorMessage.CommonError.ErrorMessageTranslation do
+  defmodule GQLErrorMessage.Translator.ErrorMessageTranslation do
     @moduledoc """
     This is a stub module that is compiled when the `:error_message` dependency
     is not available. All functions in this module will raise an error
@@ -171,7 +171,7 @@ else
     """
 
     @doc_missing_dependency """
-    The adapter `GQLErrorMessage.CommonError.ErrorMessageTranslation`
+    The adapter `GQLErrorMessage.Translator.ErrorMessageTranslation`
     requires the `:error_message` dependency.
 
     You are trying to use this adapter, but `:error_message` could not be found.
