@@ -1,8 +1,8 @@
-defmodule GQLErrorMessage.Translator.ErrorMessageTranslationTest do
+defmodule GQLErrorMessage.ErrorMessageTranslatorTest do
   use ExUnit.Case, async: true
-  doctest GQLErrorMessage.Translator.ErrorMessageTranslation
+  doctest GQLErrorMessage.ErrorMessageTranslator
 
-  alias GQLErrorMessage.Translator.ErrorMessageTranslation
+  alias GQLErrorMessage.ErrorMessageTranslator
   alias GQLErrorMessage.{Spec, ClientError, ServerError}
 
   test "intersecting_paths/2 finds common paths in nested structures" do

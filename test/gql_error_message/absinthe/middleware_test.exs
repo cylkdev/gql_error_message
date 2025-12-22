@@ -1,6 +1,6 @@
-defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
+defmodule GQLErrorMessage.MiddlewareTest do
   use ExUnit.Case, async: true
-  doctest GQLErrorMessage.Absinthe.Middleware
+  doctest GQLErrorMessage.Middleware
 
   defmodule MockSchema do
     use Absinthe.Schema
@@ -29,7 +29,7 @@ defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
           {:ok, "hello world"}
         end
 
-        middleware GQLErrorMessage.Absinthe.Middleware
+        middleware GQLErrorMessage.Middleware
       end
 
       field :query_bad_request, :query_bad_request_payload do
@@ -44,7 +44,7 @@ defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
            }}
         end
 
-        middleware GQLErrorMessage.Absinthe.Middleware
+        middleware GQLErrorMessage.Middleware
       end
 
       field :query_internal_server_error, :query_internal_server_error_payload do
@@ -59,7 +59,7 @@ defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
            }}
         end
 
-        middleware GQLErrorMessage.Absinthe.Middleware
+        middleware GQLErrorMessage.Middleware
       end
     end
 
@@ -69,7 +69,7 @@ defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
           {:ok, "hi"}
         end
 
-        middleware GQLErrorMessage.Absinthe.Middleware
+        middleware GQLErrorMessage.Middleware
       end
 
       field :mutation_validation_error, :mutation_validation_error_payload do
@@ -83,7 +83,7 @@ defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
            )}
         end
 
-        middleware GQLErrorMessage.Absinthe.Middleware
+        middleware GQLErrorMessage.Middleware
       end
 
       # field :query_internal_server_error, :query_internal_server_error_payload do
@@ -98,7 +98,7 @@ defmodule GQLErrorMessage.Absinthe.MiddlewareTest do
       #      }}
       #   end
 
-      #   middleware GQLErrorMessage.Absinthe.Middleware
+      #   middleware GQLErrorMessage.Middleware
       # end
     end
   end

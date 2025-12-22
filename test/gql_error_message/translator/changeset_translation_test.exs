@@ -1,4 +1,4 @@
-defmodule GQLErrorMessage.Translator.ChangesetTranslationTest do
+defmodule GQLErrorMessage.ChangesetTranslatorTest do
   use ExUnit.Case, async: true
-  doctest GQLErrorMessage.Translator.ChangesetTranslation
+  doctest GQLErrorMessage.ChangesetTranslator
 end

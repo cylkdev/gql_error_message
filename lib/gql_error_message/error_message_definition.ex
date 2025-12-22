@@ -1,30 +1,8 @@
-defmodule GQLErrorMessage.DefaultCodex do
-  @moduledoc """
-  The default store for error specifications.
-
-  This module provides a pre-defined set of standard error
-  specifications for common HTTP status codes, categorized by
-  operation (`:mutation`, `:query`, `:subscription`).
-
-  ## Customization
-
-  You can override or extend the default specifications by providing
-  a `specs` list in your application's configuration:
-
-      config :gql_error_message, specs: [
-        %{operation: :query, kind: :client_error, code: :custom_error, ...}
-      ]
-
-  > Note: The `specs` configuration is only used at compile time.
-  """
-  alias GQLErrorMessage.Spec
-
-  @behaviour GQLErrorMessage.Codex
-
+defmodule GQLErrorMessage.ErrorMessageDefinition do
   @mutation_specs [
     %{
       operation: :mutation,
-      kind: :client_error,
+      kind: :server_error,
       code: :unauthorized,
       message: "unauthorized",
       extensions: %{}
@@ -205,31 +183,17 @@ defmodule GQLErrorMessage.DefaultCodex do
     }
   ]
 
-  @specs Enum.map(@mutation_specs ++ @query_specs ++ @subscription_specs, &Spec.new/1)
-  @spec_mappings Map.new(@specs, fn spec -> {{spec.operation, spec.code}, spec} end)
+  @specs @query_specs ++ @mutation_specs ++ @subscription_specs
+  @spec_index @specs
+              |> Enum.with_index()
+              |> Map.new(fn {spec, index} -> {{spec.operation, spec.code}, index} end)
 
-  @impl true
-  @doc """
-  Returns the list of all error specifications.
-  """
   def list, do: @specs
 
-  @impl true
-  @doc """
-  Retrieves an error specification by operation and code.
-  """
-  def spec_for(op, code) do
-    case @spec_mappings do
-      %{{^op, ^code} => value} -> value
-      _ ->
-        Spec.new(%{
-          operation: op,
-          kind: :server_error,
-          code: :internal_server_error,
-          message: "an unknown error occurred",
-          extensions: %{}
-        })
-
+  def fetch_spec!(op, code) do
+    case Map.get(@spec_index, {op, code}) do
+      nil -> raise "ErrorMessageDefinition not found for operation: #{op} and code: #{code}"
+      index -> get_in(@specs, [Access.at!(index)])
     end
   end
 end

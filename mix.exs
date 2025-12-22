@@ -66,13 +66,13 @@ defmodule GQLErrorMessage.MixProject do
           GQLErrorMessage.Codex,
           GQLErrorMessage.DefaultCodex,
           GQLErrorMessage.Translation,
-          GQLErrorMessage.Translator.ChangesetTranslation,
-          GQLErrorMessage.Translator.ErrorMessageTranslation
+          GQLErrorMessage.ChangesetTranslator,
+          GQLErrorMessage.ErrorMessageTranslator
         ],
         "Absinthe API": [
           GQLErrorMessage.Absinthe,
-          GQLErrorMessage.Absinthe.Middleware,
-          GQLErrorMessage.Absinthe.Type
+          GQLErrorMessage.Middleware,
+          GQLErrorMessage.Type
         ],
         Utilities: [
           GQLErrorMessage.Serializer
