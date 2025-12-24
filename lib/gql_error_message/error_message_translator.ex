@@ -1,30 +1,42 @@
 defmodule GQLErrorMessage.ErrorMessageTranslator do
-  alias GQLErrorMessage.{
-    ClientError,
-    ServerError,
-    ErrorMessageDefinition
-  }
+  alias GQLErrorMessage.{ClientError, ServerError}
 
+  @type operation :: :mutation | :query | :subscription
+
+  @doc """
+  Translates an `%ErrorMessage{}` into GraphQL-safe error structs.
+
+  ## Details schema
+
+  The translator supports a simple, explicit schema under `error.details`:
+
+    * `:input` - a map describing the input fields related to the error.
+      This is used to build deep field paths. The *shape* (keys and nesting)
+      is what matters.
+    * `:message` - optional override message template.
+    * `:extensions` - optional server error extensions.
+
+  Message templates may include `%{key}` and `%{value}` placeholders.
+  """
+  @spec translate_error(operation(), map(), ErrorMessage.t()) :: [
+          ClientError.t() | ServerError.t()
+        ]
   def translate_error(op, input, %ErrorMessage{code: code} = e) do
-    spec = ErrorMessageDefinition.fetch_spec!(op, code)
-    translate_error(op, input, e, spec)
+    kind = kind_for_code(code)
+    translate_error(op, input, e, kind)
   end
 
-  def translate_error(:mutation, input, %ErrorMessage{} = e, %{kind: :server_error} = spec) do
-    case e.details do
-      nil ->
-        extensions = e.details || %{}
-        [%ServerError{message: e.message, extensions: extensions}]
+  defp translate_error(:mutation, input, %ErrorMessage{} = e, :server) do
+    {msg, details_input, extensions} = normalize_details(e)
 
-      details ->
-        msg = details[:message] || e.message || spec.message
-        error_inputs = details[:input] || details[:params] || Map.delete(details, :gql)
+    input
+    |> intersecting_paths(details_input)
+    |> case do
+      [] ->
+        [%ServerError{message: msg, extensions: extensions}]
 
-        extensions = Map.merge(spec.extensions || %{}, details[:extensions] || %{})
-
-        input
-        |> intersecting_paths(error_inputs)
-        |> Enum.map(fn {field, value} ->
+      paths ->
+        Enum.map(paths, fn {field, value} ->
           key = List.last(field)
           msg2 = replace_template(msg, key, value)
           %ServerError{message: msg2, extensions: extensions}
@@ -32,31 +44,48 @@ defmodule GQLErrorMessage.ErrorMessageTranslator do
     end
   end
 
-  def translate_error(:mutation, _input, %ErrorMessage{code: code} = e, %{kind: :client_error} = _spec) do
-    code2 = code |> Atom.to_string() |> String.upcase()
-    extensions = Map.put(e.details || %{}, :code, code2)
-    [%ServerError{message: e.message, extensions: extensions}]
-  end
+  defp translate_error(:mutation, input, %ErrorMessage{} = e, :client) do
+    {msg, details_input, _extensions} = normalize_details(e)
 
-  def translate_error(:query, _input, %ErrorMessage{} = e, %{kind: :server_error} = _spec) do
-    [%ServerError{message: e.message, extensions: e.details || %{}}]
-  end
+    input
+    |> intersecting_paths(details_input)
+    |> case do
+      [] ->
+        [%ClientError{field: ["unknown"], message: msg}]
 
-  def translate_error(:query, input, %ErrorMessage{} = e, %{kind: :client_error} = spec) do
-    case e.details do
-      nil ->
-        [%ClientError{field: ["unknown"], message: e.message}]
-
-      details ->
-        msg = details[:message] || e.message || spec.message
-        error_inputs = details[:input] || details[:params] || Map.delete(details, :gql)
-
-        input
-        |> intersecting_paths(error_inputs)
-        |> Enum.map(fn {field, value} ->
+      paths ->
+        Enum.map(paths, fn {field, value} ->
           key = List.last(field)
           msg2 = replace_template(msg, key, value)
           %ClientError{field: field, message: msg2}
+        end)
+    end
+  end
+
+  defp translate_error(op, _input, %ErrorMessage{} = e, :server)
+       when op in [:query, :subscription] do
+    {msg, _details_input, extensions} = normalize_details(e)
+    [%ServerError{message: msg, extensions: extensions}]
+  end
+
+  defp translate_error(op, input, %ErrorMessage{} = e, :client)
+       when op in [:query, :subscription] do
+    {msg, details_input, extensions} = normalize_details(e)
+
+    # Queries/subscriptions cannot return client errors. We translate them into
+    # server errors. If we can build per-field messages, we emit one server error
+    # per field; otherwise we emit a single server error.
+    input
+    |> intersecting_paths(details_input)
+    |> case do
+      [] ->
+        [%ServerError{message: msg, extensions: extensions}]
+
+      paths ->
+        Enum.map(paths, fn {field, value} ->
+          key = List.last(field)
+          msg2 = replace_template(msg, key, value)
+          %ServerError{message: msg2, extensions: extensions}
         end)
     end
   end
@@ -76,55 +105,90 @@ defmodule GQLErrorMessage.ErrorMessageTranslator do
   end
 
   @doc false
-  @spec intersecting_paths(input :: map(), error_inputs :: map()) ::
+  @spec intersecting_paths(input :: map(), error_input :: map()) ::
           list({path :: list(), value :: term()})
-  def intersecting_paths(input, error_inputs) do
-    input
-    |> collect_intersected_paths(error_inputs, [], [])
+  def intersecting_paths(input, error_input) when is_map(input) and is_map(error_input) do
+    error_input
+    |> collect_paths([], [])
+    |> Enum.reduce([], fn path, acc ->
+      case get_in_path(input, path) do
+        {:ok, value} -> [{path, value} | acc]
+        :error -> acc
+      end
+    end)
     |> Enum.reverse()
   end
 
-  defp collect_intersected_paths(inputs, error_value, path, acc) when is_list(inputs) do
-    if Keyword.keyword?(inputs) do
-      Enum.reduce(inputs, acc, fn input, acc ->
-        collect_intersected_paths(input, error_value, path, acc)
-      end)
-    else
-      if inputs === error_value do
-        [{Enum.reverse(path), inputs} | acc]
-      else
-        acc
-      end
-    end
-  end
+  def intersecting_paths(_input, _error_input), do: []
 
-  defp collect_intersected_paths(input, errors, path, acc) when is_list(errors) do
-    Enum.reduce(errors, acc, fn error, acc ->
-      collect_intersected_paths(input, error, path, acc)
+  defp collect_paths(map, path, acc) when is_map(map) do
+    Enum.reduce(map, acc, fn {k, v}, acc ->
+      next_path = path ++ [k]
+
+      cond do
+        is_map(v) and map_size(v) > 0 ->
+          collect_paths(v, next_path, acc)
+
+        true ->
+          [next_path | acc]
+      end
     end)
   end
 
-  defp collect_intersected_paths({input_key, input_val}, error_inputs, path, acc) do
-    if Map.has_key?(error_inputs, input_key) do
-      next_error_inputs = Map.fetch!(error_inputs, input_key)
-      next_path = [input_key | path]
-      collect_intersected_paths(input_val, next_error_inputs, next_path, acc)
+  defp collect_paths(_other, _path, acc), do: acc
+
+  defp get_in_path(data, path) when is_list(path) do
+    Enum.reduce_while(path, {:ok, data}, fn key, {:ok, current} ->
+      cond do
+        is_map(current) and Map.has_key?(current, key) ->
+          {:cont, {:ok, Map.fetch!(current, key)}}
+
+        true ->
+          {:halt, :error}
+      end
+    end)
+  end
+
+  defp normalize_details(%ErrorMessage{} = e) do
+    details = e.details || %{}
+
+    msg =
+      cond do
+        is_map(details) and is_binary(details[:message]) -> details[:message]
+        is_binary(e.message) -> e.message
+        true -> "unexpected error"
+      end
+
+    input =
+      if is_map(details) and is_map(details[:input]) do
+        details[:input]
+      else
+        %{}
+      end
+
+    extensions =
+      if is_map(details) and is_map(details[:extensions]) do
+        details[:extensions]
+      else
+        %{}
+      end
+
+    {msg, input, extensions}
+  end
+
+  defp kind_for_code(code) when is_atom(code) do
+    if code in [
+         :forbidden,
+         :conflict,
+         :not_found,
+         :unprocessable_entity,
+         :bad_request
+       ] do
+      :client
     else
-      acc
+      :server
     end
   end
 
-  defp collect_intersected_paths(input, error_inputs, path, acc) when is_map(input) do
-    input
-    |> Map.to_list()
-    |> collect_intersected_paths(error_inputs, path, acc)
-  end
-
-  defp collect_intersected_paths(user_leaf, error_leaf, path, acc) do
-    if user_leaf === error_leaf do
-      [{Enum.reverse(path), user_leaf} | acc]
-    else
-      acc
-    end
-  end
+  defp kind_for_code(_), do: :server
 end

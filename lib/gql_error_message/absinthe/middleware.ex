@@ -70,7 +70,9 @@ defmodule GQLErrorMessage.Absinthe.Middleware do
         args
       end
 
-    case errors |> List.wrap() |> Enum.flat_map(&GQLErrorMessage.translate_error(op, input, &1)) do
+    case errors
+         |> List.wrap()
+         |> Enum.flat_map(&GQLErrorMessage.translate_error(op, input, &1)) do
       [%ClientError{} | _] = gql_errors ->
         if op === :mutation do
           current_value = value || %{}

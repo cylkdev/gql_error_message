@@ -7,11 +7,11 @@ defmodule GQLErrorMessage.Absinthe.Type do
 
   ## Usage
 
-  Import this module into your schema and use the `user_error_payload_fields`
+  Import this module into your schema and use the `user_errors_field`
   macro within your payload objects.
 
       object :my_payload do
-        import_fields :user_error_payload_fields
+        import_fields :user_errors_field
         field :result, :my_type
       end
 
@@ -34,7 +34,7 @@ defmodule GQLErrorMessage.Absinthe.Type do
 
   This field is defined as a list of `:user_error` objects.
   """
-  defmacro user_error_payload_fields do
+  defmacro user_errors_field do
     quote do
       field :user_errors, list_of(:user_error)
     end
