@@ -34,7 +34,7 @@ defmodule GQLErrorMessage.Serializer do
   end
 
   def to_jsonable_map(data) when is_map(data) do
-    Map.new(data, fn {k, v} -> {to_string(k), to_jsonable_map(v)} end)
+    Map.new(data, fn {k, v} -> {k, to_jsonable_map(v)} end)
   end
 
   def to_jsonable_map(data) when is_list(data) do
