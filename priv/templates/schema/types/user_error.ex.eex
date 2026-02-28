@@ -1,0 +1,37 @@
+defmodule <%= @module_name %> do
+  @moduledoc """
+  Absinthe types for `GQLErrorMessage`.
+
+  This module defines the `:user_error` object type used by
+  `GQLErrorMessage.Absinthe.Middleware` to return client-facing
+  validation errors on mutation payloads.
+
+  ## The `:user_error` Object Type
+
+  The `:user_error` object type has two fields:
+
+    * `field` — `list_of(:string)`. The path to the invalid input
+      field, such as `["email"]` or `["address", "zipCode"]`. An
+      empty list means the error applies to the input as a whole.
+
+    * `message` — `:string`. A human-readable description of the
+      error.
+
+  ## Adding `user_errors` to a Mutation Payload
+
+  Each mutation payload type must include a `user_errors` field so
+  that client errors can be returned to the caller:
+
+      object :create_user_payload do
+        field :user, :user
+        field :user_errors, list_of(:user_error)
+      end
+
+  """
+  use Absinthe.Schema.Notation
+
+  object :user_error do
+    field :field, list_of(:string)
+    field :message, :string
+  end
+end

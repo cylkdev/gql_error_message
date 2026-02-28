@@ -1,0 +1,46 @@
+defmodule GQLErrorMessage.Support.Absinthe.PerFieldSchema do
+  @moduledoc false
+  use Absinthe.Schema
+
+  alias GQLErrorMessage.Support.Absinthe.Resolvers
+
+  query do
+    field :user, :user do
+      arg :name, non_null(:string)
+
+      resolve &Resolvers.get_user/3
+
+      middleware GQLErrorMessage.Absinthe.Middleware
+    end
+  end
+
+  mutation do
+    field :create_user, :create_user_payload do
+      arg :input, non_null(:create_user_input)
+
+      resolve &Resolvers.create_user/3
+
+      middleware GQLErrorMessage.Absinthe.Middleware
+    end
+  end
+
+  object :user do
+    field :name, :string
+    field :email, :string
+  end
+
+  input_object :create_user_input do
+    field :name, non_null(:string)
+    field :email, non_null(:string)
+  end
+
+  object :user_error do
+    field :field, list_of(:string)
+    field :message, :string
+  end
+
+  object :create_user_payload do
+    field :user, :user
+    field :user_errors, list_of(:user_error)
+  end
+end
